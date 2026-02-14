@@ -3,10 +3,8 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 sse-starlette>=2.0.0
 
-# Database
-sqlalchemy[asyncio]>=2.0
-asyncpg
-alembic
+# Database (Supabase)
+supabase
 
 # Validation & Config
 pydantic>=2.0

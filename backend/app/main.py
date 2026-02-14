@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.logging_config import setup_logging, get_logger
-from app.api.routes import health, audit
+from app.api.routes import health, audit, auth
 
 # Initialize logging before anything else
 setup_logging()
@@ -18,11 +18,6 @@ async def lifespan(app: FastAPI):
     """Application lifespan — startup and shutdown events."""
     settings = get_settings()
     logger.info("🚀 %s v%s starting... [env=%s]", settings.app_name, settings.app_version, settings.app_env)
-
-    # NOTE: Database tables are managed via Alembic migrations.
-    # For local dev without Alembic, uncomment below:
-    # from app.database import init_db
-    # await init_db()
 
     yield
 
@@ -57,6 +52,7 @@ app.add_middleware(
 # ── Mount routers ──
 app.include_router(health.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
 
 
 @app.get("/")

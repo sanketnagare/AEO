@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import TerminalLine from "./TerminalLine";
 import { startAuditStream, type StreamEvent } from "@/lib/sse";
+import { supabase } from "@/lib/supabase";
+import TerminalLoginCard from "./TerminalLoginCard";
 
 interface Line {
     id: number;
@@ -56,6 +58,43 @@ export default function Terminal() {
     const queueRef = useRef<QueueItem[]>([]);
     const isProcessingRef = useRef(false);
     const currentTypingTextRef = useRef<string>("");
+
+    // Auth & Lead Magnet State
+    const [showAuthOverlay, setShowAuthOverlay] = useState(false);
+    const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
+    // Run audit logic (extracted for reuse)
+
+
+    // Check for auth and pending auto-start on mount
+    useEffect(() => {
+        const checkAuthAndAutoStart = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            const storedUrl = localStorage.getItem("pending_audit_url");
+
+            if (session && storedUrl) {
+                // If user is logged in and has a pending URL (e.g. from Google redirect), run it.
+                localStorage.removeItem("pending_audit_url");
+                // Wait for boot to finish is handled by a simple check or delay? 
+                // We'll just set it as pendingUrl and let a separate effect handle it when boot is done
+                // OR just run it immediately if we don't care about overlapping with welcome text.
+                // Better: Set it to pendingUrl and have an effect triggered when !isBooting
+                setPendingUrl(storedUrl);
+            }
+        };
+        checkAuthAndAutoStart();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session && showAuthOverlay) {
+                // Auto-close overlay if external auth happened (e.g. separate tab or magic link)
+                setShowAuthOverlay(false);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, [showAuthOverlay]);
+
+
 
     // Character-by-character typing effect for welcome
     useEffect(() => {
@@ -195,15 +234,74 @@ export default function Terminal() {
         [processQueue]
     );
 
+    // Run audit logic (extracted for reuse)
+    const runAudit = useCallback((url: string) => {
+        setIsRunning(true);
+        setScores(null);
+        // Clear pending URL if it was the source
+        setPendingUrl(null);
+
+        addLine(`> audit ${url}`, "input");
+        addLine("", "info");
+
+        const cleanup = startAuditStream(url, {
+            onEvent: (event: StreamEvent) => {
+                const typeMap: Record<string, Line["type"]> = {
+                    info: "info",
+                    success: "success",
+                    warning: "warning",
+                    error: "error",
+                    progress: "progress",
+                    cta: "cta",
+                };
+                let lineType = typeMap[event.type] || "info";
+                if (event.message.startsWith("❯ bot:")) {
+                    lineType = "bot";
+                }
+                enqueueEvent({
+                    text: event.message,
+                    type: lineType,
+                    streamType: event.stream_type || "instant",
+                });
+            },
+            onComplete: (data) => {
+                enqueueEvent({
+                    text: "",
+                    type: "info",
+                    streamType: "instant",
+                    isComplete: true,
+                    completeData: data,
+                });
+            },
+            onError: (error) => {
+                addLine(`Error: ${error}`, "error");
+                addLine("Connection lost. Please check your internet connection or try again later.", "error");
+                setIsRunning(false);
+            },
+        });
+        cleanupRef.current = cleanup;
+    }, [addLine, enqueueEvent]);
+
+    // Auto-start pending URL once booting is finished
+    useEffect(() => {
+        if (!isBooting && pendingUrl && !showAuthOverlay) {
+            // Verify we have a session first to be safe
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) {
+                    runAudit(pendingUrl);
+                }
+            });
+        }
+    }, [isBooting, pendingUrl, showAuthOverlay, runAudit]);
+
     const handleSubmit = useCallback(
-        (e: React.FormEvent) => {
+        async (e: React.FormEvent) => {
             e.preventDefault();
             const raw = input.trim();
             if (!raw || isRunning || isBooting) return;
 
             setInput("");
 
-            // Handle clear
             if (raw.toLowerCase() === "clear") {
                 setLines([
                     { id: lineIdRef.current++, text: "🤖 AIVisibilityBot v0.1.0", type: "welcome" },
@@ -215,61 +313,26 @@ export default function Terminal() {
                 return;
             }
 
-            // Validate URL
             let processedUrl = raw;
             if (!raw.startsWith("http://") && !raw.startsWith("https://")) {
                 processedUrl = `https://${raw}`;
             }
 
-            setIsRunning(true);
-            setScores(null);
+            // AUTH GUARD: Check session
+            const { data: { session } } = await supabase.auth.getSession();
 
-            addLine(`> audit ${processedUrl}`, "input");
-            addLine("", "info");
+            if (!session) {
+                // Not logged in: Trigger Lead Magnet Flow
+                setPendingUrl(processedUrl);
+                localStorage.setItem("pending_audit_url", processedUrl); // Persist for Google redirect
+                setShowAuthOverlay(true);
+                return;
+            }
 
-            // Connect to SSE stream
-            const cleanup = startAuditStream(processedUrl, {
-                onEvent: (event: StreamEvent) => {
-                    const typeMap: Record<string, Line["type"]> = {
-                        info: "info",
-                        success: "success",
-                        warning: "warning",
-                        error: "error",
-                        progress: "progress",
-                        cta: "cta",
-                    };
-
-                    // Determine the line type — bot messages that start with "❯ bot:" use "bot" type
-                    let lineType = typeMap[event.type] || "info";
-                    if (event.message.startsWith("❯ bot:")) {
-                        lineType = "bot";
-                    }
-
-                    enqueueEvent({
-                        text: event.message,
-                        type: lineType,
-                        streamType: event.stream_type || "instant",
-                    });
-                },
-                onComplete: (data) => {
-                    enqueueEvent({
-                        text: "",
-                        type: "info",
-                        streamType: "instant",
-                        isComplete: true,
-                        completeData: data,
-                    });
-                },
-                onError: (error) => {
-                    addLine(`Error: ${error}`, "error");
-                    addLine("Connection lost. Please check your internet connection or try again later.", "error");
-                    setIsRunning(false);
-                },
-            });
-
-            cleanupRef.current = cleanup;
+            // Logged in: Run Audit
+            runAudit(processedUrl);
         },
-        [input, isRunning, isBooting, addLine, enqueueEvent]
+        [input, isRunning, isBooting, runAudit]
     );
 
     // Cleanup on unmount
@@ -421,7 +484,7 @@ export default function Terminal() {
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                disabled={isRunning}
+                                disabled={isRunning || showAuthOverlay}
                                 placeholder={isRunning ? "Auditing..." : "Enter URL to audit..."}
                                 className="flex-1 bg-transparent outline-none border-none placeholder-gray-600"
                                 style={{
@@ -429,8 +492,9 @@ export default function Terminal() {
                                     fontFamily: "'JetBrains Mono', monospace",
                                     fontSize: "14px",
                                     caretColor: "var(--terminal-green)",
+                                    opacity: showAuthOverlay ? 0.5 : 1
                                 }}
-                                autoFocus
+                                autoFocus={!showAuthOverlay}
                             />
                             {!isRunning && !isTyping && (
                                 <span className="cursor-blink ml-1" style={{ color: "var(--terminal-green)", fontFamily: "'JetBrains Mono', monospace", fontSize: "14px" }}>▋</span>
@@ -441,6 +505,27 @@ export default function Terminal() {
                                 </span>
                             )}
                         </form>
+                    )}
+
+                    {/* Login Overlay */}
+                    {showAuthOverlay && (
+                        <div
+                            className="absolute inset-0 z-50 flex items-center justify-center p-4 cursor-default"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowAuthOverlay(false)} />
+                            <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+                                <TerminalLoginCard
+                                    onSuccess={() => {
+                                        setShowAuthOverlay(false);
+                                    }}
+                                    onClose={() => {
+                                        setShowAuthOverlay(false);
+                                        setPendingUrl(null);
+                                    }}
+                                />
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

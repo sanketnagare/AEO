@@ -22,8 +22,9 @@ class Settings(BaseSettings):
             "http://localhost:3001",
         ]
 
-    # Database (Supabase PostgreSQL)
-    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/aivisibilitybot"
+    # Supabase
+    supabase_url: str = ""
+    supabase_service_key: str = ""
 
     # Firecrawl API
     firecrawl_api_key: str = ""

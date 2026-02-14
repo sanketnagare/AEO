@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 import json
 
-from sqlalchemy.ext.asyncio import AsyncSession
 import litellm
 
 from app.logging_config import get_logger
@@ -32,10 +31,9 @@ class AuditAgent(BaseAgent):
 
     def __init__(
         self,
-        db: Optional[AsyncSession] = None,
         stream: Optional[EventStream] = None,
     ):
-        super().__init__(db=db, stream=stream)
+        super().__init__(stream=stream)
 
     def _get_domain(self, url: str) -> str:
         parsed = urlparse(url)

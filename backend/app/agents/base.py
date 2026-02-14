@@ -3,8 +3,6 @@
 import asyncio
 from typing import Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.streaming.event_stream import EventStream
 
 
@@ -25,10 +23,8 @@ class BaseAgent:
 
     def __init__(
         self,
-        db: Optional[AsyncSession] = None,
         stream: Optional[EventStream] = None,
     ):
-        self.db = db
         self.stream = stream
 
     async def emit(self, message: str, level: str = "info", data: Optional[dict] = None,
