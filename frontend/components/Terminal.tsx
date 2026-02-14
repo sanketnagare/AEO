@@ -262,7 +262,7 @@ export default function Terminal() {
                 },
                 onError: (error) => {
                     addLine(`Error: ${error}`, "error");
-                    addLine("Make sure the backend is running on http://localhost:8000", "error");
+                    addLine("Connection lost. Please check your internet connection or try again later.", "error");
                     setIsRunning(false);
                 },
             });

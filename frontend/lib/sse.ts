@@ -19,7 +19,7 @@ export interface SSEOptions {
     onError?: (error: string) => void;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 /**
  * Connect to an SSE stream from the backend.

@@ -13,6 +13,15 @@ class Settings(BaseSettings):
     app_name: str = "AIVisibilityBot"
     frontend_url: str = "http://localhost:3000"
 
+    @property
+    def cors_origins(self) -> list[str]:
+        """Return list of allowed origins."""
+        return [
+            self.frontend_url.rstrip("/"),
+            "http://localhost:3000",
+            "http://localhost:3001",
+        ]
+
     # Database (Supabase PostgreSQL)
     database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/aivisibilitybot"
 
