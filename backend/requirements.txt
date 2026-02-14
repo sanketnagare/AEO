@@ -1,0 +1,33 @@
+# FastAPI & Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+sse-starlette>=2.0.0
+
+# Database
+sqlalchemy[asyncio]>=2.0
+asyncpg
+alembic
+
+# Validation & Config
+pydantic>=2.0
+pydantic-settings
+
+# HTTP Client
+httpx
+
+# HTML Parsing
+beautifulsoup4
+lxml
+
+# AI / LLM
+litellm
+
+# Text Analysis
+textstat
+
+# Auth (Phase 8, included for structure)
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Utilities
+python-dotenv
