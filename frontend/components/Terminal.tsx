@@ -296,7 +296,7 @@ export default function Terminal() {
             />
 
             <div
-                className="relative w-full rounded-2xl overflow-hidden z-10"
+                className="relative w-full overflow-hidden z-10"
                 style={{
                     background: "rgba(5, 8, 16, 0.97)",
                     backdropFilter: "blur(24px)",
@@ -306,7 +306,7 @@ export default function Terminal() {
             >
                 {/* Terminal Header */}
                 <div
-                    className="flex items-center justify-between px-5 py-3 relative"
+                    className="flex items-center justify-between pl-8 pr-5 py-3 relative"
                     style={{
                         background: "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
                     }}

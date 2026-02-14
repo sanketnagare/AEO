@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Terminal from "@/components/Terminal";
+import Navbar from "@/components/Navbar";
 
 /* ── Data ─────────────────────────────────────────── */
 
@@ -54,58 +55,8 @@ export default function Home() {
     <div className="stars-bg" style={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}>
 
       {/* ───── NAV ───── */}
-      <header style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 50 }}>
-        <nav
-          aria-label="Main navigation"
-          style={{
-            display: "flex", alignItems: "center", gap: 24,
-            padding: "10px 20px", borderRadius: 9999,
-            background: "rgba(5,5,10,0.7)", backdropFilter: "blur(16px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <a href="#" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", flexShrink: 0 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 900, background: "linear-gradient(135deg,#3b82f6,#22d3ee)", color: "#000",
-            }}>AI</div>
-            <span style={{ fontWeight: 700, fontSize: 14, color: "#e5e7eb", letterSpacing: "-0.01em" }}>AIVisibilityBot</span>
-          </a>
-
-          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-            {["Why It Matters", "How It Works", "Features"].map((l) => (
-              <a
-                key={l}
-                href={`#${l.toLowerCase().replace(/\s+/g, "-")}`}
-                style={{
-                  padding: "6px 12px", fontSize: 12, fontWeight: 500, color: "#9ca3af",
-                  borderRadius: 9999, textDecoration: "none", transition: "color 0.2s",
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#9ca3af")}
-              >{l}</a>
-            ))}
-          </div>
-
-          <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
-
-          <button
-            onClick={scrollToTerminal}
-            style={{
-              fontSize: 12, fontWeight: 700, padding: "6px 16px", borderRadius: 9999, border: "none",
-              background: "#fff", color: "#000", cursor: "pointer",
-              boxShadow: "0 0 20px rgba(255,255,255,0.15)",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              whiteSpace: "nowrap", flexShrink: 0,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-          >Get Started</button>
-        </nav>
-      </header>
+      {/* ───── NAV ───── */}
+      <Navbar />
 
       <main>
 
@@ -268,7 +219,7 @@ export default function Home() {
 
           {/* Table */}
           <div style={{ overflowX: "auto" }}>
-            <table style={{
+            <table className="responsive-table" style={{
               width: "100%", borderCollapse: "separate", borderSpacing: 0,
               background: "rgba(255,255,255,0.02)", borderRadius: 16,
               border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden",
@@ -309,20 +260,20 @@ export default function Home() {
                   <tr key={row.type} style={{
                     borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none",
                   }}>
-                    <td style={{ padding: "20px", verticalAlign: "top" }}>
+                    <td data-label="Type" style={{ padding: "20px", verticalAlign: "top" }}>
                       <span style={{
                         display: "inline-block", padding: "4px 12px", borderRadius: 8,
                         fontSize: 13, fontWeight: 800, color: row.color,
                         background: `${row.color}15`, letterSpacing: "0.05em",
                       }}>{row.type}</span>
                     </td>
-                    <td style={{ padding: "20px", fontSize: 14, color: "#d1d5db", verticalAlign: "top", lineHeight: 1.5 }}>
+                    <td data-label="What It Is" style={{ padding: "20px", fontSize: 14, color: "#d1d5db", verticalAlign: "top", lineHeight: 1.5 }}>
                       {row.what}
                     </td>
-                    <td style={{ padding: "20px", fontSize: 14, color: "#9ca3af", verticalAlign: "top", lineHeight: 1.5 }}>
+                    <td data-label="Why You Need It" style={{ padding: "20px", fontSize: 14, color: "#9ca3af", verticalAlign: "top", lineHeight: 1.5 }}>
                       {row.why}
                     </td>
-                    <td style={{ padding: "20px", fontSize: 14, color: "#ef4444", verticalAlign: "top", lineHeight: 1.5, fontWeight: 500 }}>
+                    <td data-label="Risk If Ignored" style={{ padding: "20px", fontSize: 14, color: "#ef4444", verticalAlign: "top", lineHeight: 1.5, fontWeight: 500 }}>
                       {row.risk}
                     </td>
                   </tr>
