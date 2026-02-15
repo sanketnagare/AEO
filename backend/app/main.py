@@ -40,6 +40,17 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+from fastapi import Request
+
+@app.middleware("http")
+async def log_cors_details(request: Request, call_next):
+    origin = request.headers.get("origin")
+    response = await call_next(request)
+    if origin:
+        logger.info("🔒 CORS Request - Origin: %s | Response Headers: %s", origin, {k: v for k, v in response.headers.items() if "access-control" in k.lower()})
+    return response
+
+
 # CORS — allow frontend origin
 app.add_middleware(
     CORSMiddleware,
