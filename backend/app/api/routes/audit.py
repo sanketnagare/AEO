@@ -40,25 +40,47 @@ async def audit_stream(url: str = Query(..., description="URL to audit")):
 
         task = asyncio.create_task(run_agent())
 
-        # Yield events as they come from the agent
-        # NOTE: We intentionally do NOT set the "event" field.
-        # All events go through EventSource.onmessage to avoid
-        # conflicts with EventSource's built-in "error" event.
-        async for event in stream:
-            yield {
-                "data": json.dumps({
-                    "type": event.type,
-                    "message": event.message,
-                    "timestamp": event.timestamp.isoformat(),
-                    "data": event.data,
-                    "stream_type": event.stream_type,
-                }),
-            }
+        try:
+            # Yield events as they come from the agent
+            # We use a timeout to yield a "ping" if no events occur, 
+            # keeping the connection alive through proxies.
+            while True:
+                try:
+                    # Wait for an event with a timeout for keep-alive
+                    event = await asyncio.wait_for(stream.__anext__(), timeout=15.0)
+                    
+                    yield {
+                        "data": json.dumps({
+                            "type": event.type,
+                            "message": event.message,
+                            "timestamp": event.timestamp.isoformat(),
+                            "data": event.data,
+                            "stream_type": event.stream_type,
+                        }),
+                    }
+                except asyncio.TimeoutError:
+                    # Send a comment-based ping (standard SSE keep-alive)
+                    # or a structured ping event. Here we do both for maximum compatibility.
+                    yield ": ping\n\n" 
+                    yield {
+                        "data": json.dumps({
+                            "type": "ping",
+                            "message": "keep-alive",
+                            "timestamp": asyncio.get_event_loop().time(),
+                        }),
+                    }
+                except StopAsyncIteration:
+                    break
+        finally:
+            # Ensure agent task is complete
+            if not task.done():
+                await task
 
-        # Ensure agent task is complete
-        await task
-
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(
+        event_generator(),
+        ping=20,  # Built-in sse-starlette ping every 20s
+        send_timeout=3600,  # Allow stream to stay open for up to 1 hour
+    )
 
 
 @router.post("/single", response_model=AuditReport)

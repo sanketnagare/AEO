@@ -13,14 +13,24 @@ class Settings(BaseSettings):
     app_name: str = "AIVisibilityBot"
     frontend_url: str = "http://localhost:3000"
 
+    cors_origins_env: str = ""  # Comma-separated list of origins
+
     @property
     def cors_origins(self) -> list[str]:
         """Return list of allowed origins."""
-        return [
+        origins = [
             self.frontend_url.rstrip("/"),
             "http://localhost:3000",
             "http://localhost:3001",
+            "https://aeo-tau.vercel.app",
         ]
+        
+        # Add origins from environment variable if provided
+        if self.cors_origins_env:
+            extra_origins = [o.strip() for o in self.cors_origins_env.split(",") if o.strip()]
+            origins.extend(extra_origins)
+            
+        return list(set(origins))  # Remove duplicates
 
     # Supabase
     supabase_url: str = ""
