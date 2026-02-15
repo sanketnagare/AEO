@@ -142,11 +142,6 @@ class AuditAgent(BaseAgent):
         await self._generate_final_summary(domain, seo_score, aeo_score, geo_score, 
                                           seo_checks, aeo_checks, geo_checks)
 
-        # Call to Action
-        await asyncio.sleep(1.0)
-        await self.emit("Unlock your full audit report & detailed fix guide", level="cta", 
-                        data={"action": "signup", "label": "View Full Report & Fixes"})
-
         return AuditReport(
             url=url,
             scores=AuditScores(seo_score=seo_score, aeo_score=aeo_score, geo_score=geo_score, overall_score=overall_score),
