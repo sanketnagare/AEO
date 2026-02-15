@@ -23,6 +23,8 @@ class Settings(BaseSettings):
             "http://localhost:3000",
             "http://localhost:3001",
             "https://aeo-tau.vercel.app",
+            "https://aivisibilitybot.com",
+            "https://www.aivisibilitybot.com",
         ]
         
         # Add origins from environment variable if provided
